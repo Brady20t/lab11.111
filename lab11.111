@@ -1,0 +1,28 @@
+# app.py
+import streamlit as st
+import pickle
+import numpy as np
+import tensorflow as tf
+import pandas as pd
+
+# Load model and pipeline
+model = tf.keras.models.load_model('tf_bridge_model.h5')
+with open('preprocessing_pipeline.pkl', 'rb') as f:
+    preprocessor = pickle.load(f)
+
+st.title("Bridge Load Capacity Predictor")
+
+# Input fields
+span = st.number_input("Span (ft)", 0.0, 1000.0, 250.0)
+deck = st.number_input("Deck Width (ft)", 0.0, 1000.0, 40.0)
+age = st.number_input("Age (years)", 0.0, 150.0, 20.0)
+lanes = st.number_input("Number of Lanes", 1, 10, 2)
+condition = st.selectbox("Condition Rating (1=Poor to 5=Excellent)", [1, 2, 3, 4, 5])
+material = st.selectbox("Material", ['Steel', 'Concrete', 'Composite'])
+
+if st.button("Predict Maximum Load"):
+    input_df = pd.DataFrame([[span, deck, age, lanes, material, condition]],
+                            columns=['Span_ft', 'Deck_Width_ft', 'Age_Years', 'Num_Lanes', 'Material', 'Condition_Rating'])
+    input_processed = preprocessor.transform(input_df)
+    prediction = model.predict(input_processed)
+    st.success(f"Predicted Max Load: {prediction[0][0]:.2f} tons")
